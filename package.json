@@ -1,0 +1,14 @@
+{
+  "name": "ponto-da-camisa-followup-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "run:once": "node src/index.js --once",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}

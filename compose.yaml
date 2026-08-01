@@ -1,0 +1,14 @@
+services:
+  followup:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - followup-data:/app/data
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  followup-data:
+

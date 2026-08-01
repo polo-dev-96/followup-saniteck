@@ -1,0 +1,48 @@
+const required = (name) => {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(`Variável obrigatória ausente: ${name}`);
+  return value;
+};
+
+const boolean = (name, fallback) => {
+  const value = process.env[name];
+  if (value === undefined) return fallback;
+  return ['1', 'true', 'yes', 'sim'].includes(value.trim().toLowerCase());
+};
+
+const integer = (name, fallback, minimum = 1) => {
+  const value = Number.parseInt(process.env[name] ?? String(fallback), 10);
+  if (!Number.isInteger(value) || value < minimum) {
+    throw new Error(`${name} deve ser um inteiro maior ou igual a ${minimum}`);
+  }
+  return value;
+};
+
+export const config = Object.freeze({
+  apiBaseUrl: process.env.API_BASE_URL?.trim() || 'https://api.wts.chat/chat',
+  apiToken: required('API_TOKEN'),
+  sourceDepartmentId:
+    process.env.SOURCE_DEPARTMENT_ID?.trim() || 'b575d23d-16e4-451e-9209-83b8ffe1b821',
+  commercialDepartmentId:
+    process.env.COMMERCIAL_DEPARTMENT_ID?.trim() || '20a67e6a-83dc-4f95-9430-5bc51eeae7e4',
+  botKey:
+    process.env.BOT_KEY?.trim() || 'c8ccb5ab-7f88-447d-b771-2d0ddd681a15',
+  from: process.env.CHANNEL_FROM?.trim() || '9236121212',
+  pollIntervalMs: integer('POLL_INTERVAL_SECONDS', 600, 10) * 1000,
+  pageSize: integer('PAGE_SIZE', 100, 1),
+  requestTimeoutMs: integer('REQUEST_TIMEOUT_MS', 30000, 1000),
+  requestRetries: integer('REQUEST_RETRIES', 3, 0),
+  actionRetries: integer('ACTION_RETRIES', 5, 1),
+  retryDelayMinutes: integer('ACTION_RETRY_DELAY_MINUTES', 5, 1),
+  databasePath: process.env.DATABASE_PATH?.trim() || './data/followups.sqlite',
+  dryRun: boolean('DRY_RUN', true),
+  healthPort: integer('HEALTH_PORT', 3000, 1),
+});
+
+export const messages = Object.freeze({
+  followup30: 'Olá! 😊 Para continuar o atendimento, é só responder às perguntas acima.',
+  followup2h: 'Olá! 😊 Fico no aguardo da sua resposta para dar sequência ao atendimento.',
+  closing:
+    'Olá! 😊 Como não tive retorno, este atendimento será encerrado. Quando quiser continuar, é só retomar por aqui 🙂',
+});
+

@@ -4,11 +4,13 @@ import { FlwChatClient } from './api-client.js';
 import { FollowupEngine } from './engine.js';
 import { log } from './logger.js';
 import { ActionStore } from './store.js';
+import { TestPanel } from './panel.js';
 
 const once = process.argv.includes('--once');
 const store = new ActionStore(config.databasePath);
 const client = new FlwChatClient(config);
 const engine = new FollowupEngine({ config, client, store });
+const testPanel = new TestPanel({ config, client, store });
 
 let timer;
 let server;
@@ -36,12 +38,13 @@ if (once) {
     await shutdown('run-once-error', 1);
   }
 } else {
-  server = createServer((request, response) => {
+  server = createServer(async (request, response) => {
     if (request.method === 'GET' && ['/health', '/ready'].includes(request.url)) {
       response.writeHead(engine.lastError ? 503 : 200, { 'content-type': 'application/json' });
       response.end(JSON.stringify(engine.health()));
       return;
     }
+    if (await testPanel.handle(request, response)) return;
     response.writeHead(404, { 'content-type': 'application/json' });
     response.end(JSON.stringify({ error: 'not_found' }));
   });
@@ -50,6 +53,8 @@ if (once) {
       healthPort: config.healthPort,
       intervalMs: config.pollIntervalMs,
       dryRun: config.dryRun,
+      testPanelEnabled: config.testPanelEnabled,
+      allowLiveTest: config.allowLiveTest,
     }),
   );
 
@@ -58,4 +63,3 @@ if (once) {
   timer = setInterval(run, config.pollIntervalMs);
   timer.unref();
 }
-

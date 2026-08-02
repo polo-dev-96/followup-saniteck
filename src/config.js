@@ -18,11 +18,11 @@ const integer = (name, fallback, minimum = 1) => {
   return value;
 };
 
-export const config = Object.freeze({
+const loadedConfig = {
   apiBaseUrl: process.env.API_BASE_URL?.trim() || 'https://api.wts.chat/chat',
   apiToken: required('API_TOKEN'),
   sourceDepartmentId:
-    process.env.SOURCE_DEPARTMENT_ID?.trim() || 'b575d23d-16e4-451e-9209-83b8ffe1b821',
+    process.env.SOURCE_DEPARTMENT_ID?.trim() || '6e9426e0-1166-46a7-9c4b-129e46af49bc',
   commercialDepartmentId:
     process.env.COMMERCIAL_DEPARTMENT_ID?.trim() || '20a67e6a-83dc-4f95-9430-5bc51eeae7e4',
   botKey:
@@ -37,7 +37,19 @@ export const config = Object.freeze({
   databasePath: process.env.DATABASE_PATH?.trim() || './data/followups.sqlite',
   dryRun: boolean('DRY_RUN', true),
   healthPort: integer('HEALTH_PORT', 3000, 1),
-});
+  testPanelEnabled: boolean('TEST_PANEL_ENABLED', false),
+  allowLiveTest: boolean('ALLOW_LIVE_TEST', false),
+  testAdminToken: process.env.TEST_ADMIN_TOKEN?.trim() || '',
+};
+
+if (loadedConfig.testPanelEnabled && loadedConfig.testAdminToken.length < 16) {
+  throw new Error('TEST_ADMIN_TOKEN deve ter pelo menos 16 caracteres quando o painel estiver ativo');
+}
+if (loadedConfig.allowLiveTest && !loadedConfig.testPanelEnabled) {
+  throw new Error('ALLOW_LIVE_TEST exige TEST_PANEL_ENABLED=true');
+}
+
+export const config = Object.freeze(loadedConfig);
 
 export const messages = Object.freeze({
   followup30: 'Olá! 😊 Para continuar o atendimento, é só responder às perguntas acima.',
@@ -45,4 +57,3 @@ export const messages = Object.freeze({
   closing:
     'Olá! 😊 Como não tive retorno, este atendimento será encerrado. Quando quiser continuar, é só retomar por aqui 🙂',
 });
-

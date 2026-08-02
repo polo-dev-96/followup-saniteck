@@ -9,7 +9,7 @@ const { decideWindow, evaluateSession, FollowupEngine } = await import('../src/e
 const { ActionStore } = await import('../src/store.js');
 const { SELLER_DEPARTMENTS } = await import('../src/routing.js');
 
-const SOURCE_TEAM = 'b575d23d-16e4-451e-9209-83b8ffe1b821';
+const SOURCE_TEAM = '6e9426e0-1166-46a7-9c4b-129e46af49bc';
 const baseSession = (minutes, overrides = {}) => {
   const now = Date.parse('2026-08-01T12:00:00.000Z');
   const lastMessageIn = new Date(now - minutes * 60000).toISOString();
@@ -77,4 +77,3 @@ test('executa mensagem, chatbot e transferência na ordem e sem duplicar', async
   store.close();
   rmSync(directory, { recursive: true, force: true });
 });
-

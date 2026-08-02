@@ -106,8 +106,19 @@ export class ActionStore {
       .reduce((result, row) => ({ ...result, [row.status]: Number(row.total) }), {});
   }
 
+  actionsFor(sessionId, referenceAt) {
+    return this.database
+      .prepare(`
+        SELECT action_type AS actionType, status, attempts,
+               last_error AS lastError, updated_at AS updatedAt
+          FROM actions
+         WHERE session_id = ? AND reference_at = ?
+         ORDER BY created_at
+      `)
+      .all(sessionId, referenceAt);
+  }
+
   close() {
     this.database.close();
   }
 }
-

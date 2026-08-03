@@ -6,6 +6,7 @@ const OPEN_STATUSES = new Set(['STARTED', 'PENDING', 'IN_PROGRESS']);
 const CLOSING_PREFIX = 'Olá! 😊 Como não tive retorno, este atendimento será encerrado.';
 
 export const decideWindow = (minutes, closingAlreadySent = false) => {
+  if (minutes >= 15 && minutes < 25) return '15m';
   if (minutes >= 30 && minutes < 40) return '30m';
   if (minutes >= 120 && minutes < 130) return '2h';
   if ((minutes >= 1380 && minutes < 1440) || (closingAlreadySent && minutes < 1500)) {
@@ -81,8 +82,13 @@ export class FollowupEngine {
   }
 
   async reactivate(session, context) {
-    const suffix = context.window === '30m' ? '30m' : '2h';
-    const text = context.window === '30m' ? messages.followup30 : messages.followup2h;
+    const suffix = context.window;
+    const textByWindow = {
+      '15m': messages.followup15,
+      '30m': messages.followup30,
+      '2h': messages.followup2h,
+    };
+    const text = textByWindow[context.window];
     const messageOk = await this.step(
       session,
       `message_${suffix}`,
@@ -104,6 +110,8 @@ export class FollowupEngine {
         }),
     );
     if (!chatbotOk) return;
+
+    if (context.window === '15m') return;
 
     const routing = selectDepartment(
       session.contactDetails?.tagsName,
@@ -143,7 +151,11 @@ export class FollowupEngine {
       return;
     }
     this.running = true;
-    const summary = { scanned: 0, eligible: 0, byWindow: { '30m': 0, '2h': 0, closing: 0 } };
+    const summary = {
+      scanned: 0,
+      eligible: 0,
+      byWindow: { '15m': 0, '30m': 0, '2h': 0, closing: 0 },
+    };
     log('info', 'run.started', { dryRun: this.config.dryRun });
 
     try {
@@ -182,4 +194,3 @@ export class FollowupEngine {
     };
   }
 }
-

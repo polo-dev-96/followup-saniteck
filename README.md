@@ -2,10 +2,19 @@
 
 Aplicação standalone que substitui a automação de follow-up do n8n. A cada 10 minutos ela consulta as conversas da equipe Orçamento/Pedido, envia os follow-ups, ativa o chatbot e transfere o atendimento conforme a tag do vendedor.
 
+## Documentação
+
+- [Índice operacional](docs/README.md)
+- [Arquitetura e regras de negócio](docs/01-arquitetura-e-regras.md)
+- [Instalação em produção](docs/02-instalacao-producao.md)
+- [Homologação pelo painel](docs/03-homologacao.md)
+- [Operação e solução de problemas](docs/04-operacao-e-troubleshooting.md)
+
 ## Regras
 
-- 30–40 minutos: envia o primeiro follow-up, ativa a IA e transfere por tag.
-- 2h–2h10: envia o segundo follow-up, ativa a IA e transfere por tag.
+- 15–25 minutos: envia o primeiro follow-up e ativa a IA, sem transferência.
+- 30–40 minutos: envia o segundo follow-up, ativa a IA e transfere por tag.
+- 2h–2h10: envia o follow-up de 2 horas, ativa a IA e transfere por tag.
 - 23–24 horas: envia a mensagem de encerramento e conclui o atendimento.
 - Processa apenas conversas abertas da equipe configurada em `SOURCE_DEPARTMENT_ID`.
 - Exige que a última mensagem da empresa seja posterior à última mensagem do cliente.

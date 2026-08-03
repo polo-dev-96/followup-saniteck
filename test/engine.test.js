@@ -27,6 +27,9 @@ const baseSession = (minutes, overrides = {}) => {
 };
 
 test('classifica somente as janelas do workflow', () => {
+  assert.equal(decideWindow(15), '15m');
+  assert.equal(decideWindow(24.99), '15m');
+  assert.equal(decideWindow(25), null);
   assert.equal(decideWindow(30), '30m');
   assert.equal(decideWindow(39.99), '30m');
   assert.equal(decideWindow(40), null);
@@ -35,6 +38,37 @@ test('classifica somente as janelas do workflow', () => {
   assert.equal(decideWindow(1380), 'closing');
   assert.equal(decideWindow(1440), null);
   assert.equal(decideWindow(1450, true), 'closing');
+});
+
+test('follow-up de 15 minutos não transfere o atendimento', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'followup-15m-test-'));
+  const store = new ActionStore(join(directory, 'test.sqlite'));
+  const calls = [];
+  const client = {
+    sendMessage: async () => calls.push('message'),
+    startChatbot: async () => calls.push('chatbot'),
+    transferToDepartment: async () => calls.push('transfer'),
+  };
+  const config = {
+    dryRun: false,
+    actionRetries: 3,
+    retryDelayMinutes: 1,
+    botKey: 'bot',
+    from: 'from',
+    commercialDepartmentId: 'commercial',
+  };
+  const engine = new FollowupEngine({ config, client, store });
+  const testSession = baseSession(15);
+
+  await engine.reactivate(testSession, {
+    window: '15m',
+    referenceAt: testSession.lastMessageIn,
+    closingAlreadySent: false,
+  });
+
+  assert.deepEqual(calls, ['message', 'chatbot']);
+  store.close();
+  rmSync(directory, { recursive: true, force: true });
 });
 
 test('ignora conversa de outra equipe ou sem resposta posterior', () => {

@@ -96,7 +96,7 @@ docker compose build --pull
 docker compose run --rm followup node src/index.js --once
 ```
 
-Com `DRY_RUN=true`, a aplicação consulta dados reais, mas não envia mensagem, não inicia chatbot, não transfere e não conclui sessões.
+Com `DRY_RUN=true`, a aplicação consulta dados reais, mas não transfere atendimentos nem inicia o chatbot.
 
 Eventos esperados:
 

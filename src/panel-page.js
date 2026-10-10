@@ -3,7 +3,7 @@ export const testPage = `<!doctype html>
 <head>
   <meta charset=utf-8>
   <meta name=viewport content=width=device-width,initial-scale=1>
-  <title>Homologação de Follow-up</title>
+  <title>Homologação de transferência e chatbot</title>
   <style>
     :root { color-scheme:dark; font-family:Inter,system-ui,sans-serif; background:#0b1220; color:#e5e7eb }
     * { box-sizing:border-box } body { margin:0; padding:32px 16px } main { max-width:820px; margin:auto }
@@ -18,7 +18,7 @@ export const testPage = `<!doctype html>
   </style>
 </head>
 <body><main>
-  <h1>Homologação de follow-up</h1>
+  <h1>Homologação de transferência e chatbot</h1>
   <p class=muted>Busca e testa somente uma sessão aberta. O worker geral mantém sua configuração de DRY_RUN.</p>
   <section class=card>
     <label for=token>Token administrativo</label>
@@ -30,7 +30,7 @@ export const testPage = `<!doctype html>
   <section class=card>
     <strong>Resultado</strong>
     <pre id=result>Aguardando consulta.</pre>
-    <label><input id=confirm type=checkbox style=width:auto> Confirmo o envio real do follow-up de 30 minutos, reativação do chatbot e transferência.</label>
+    <label><input id=confirm type=checkbox style=width:auto> Confirmo a transferência real e a ativação do chatbot.</label>
     <button class=danger id=execute disabled>Executar teste real</button>
     <p class=warning>O envio real só funciona quando ALLOW_LIVE_TEST=true.</p>
   </section>
@@ -65,7 +65,7 @@ export const testPage = `<!doctype html>
       if (!confirm.checked || !selectedSessionId) return;
       execute.disabled = true; result.textContent = 'Executando teste real...';
       try {
-        const body = await call('/api/test/execute', {phone:phone.value,sessionId:selectedSessionId,confirmation:'ENVIAR FOLLOWUP'});
+        const body = await call('/api/test/execute', {phone:phone.value,sessionId:selectedSessionId,confirmation:'EXECUTAR TRANSFERENCIA'});
         result.textContent = JSON.stringify(body, null, 2);
       } catch (error) { result.textContent = 'Erro: ' + error.message; }
       finally { confirm.checked = false; }

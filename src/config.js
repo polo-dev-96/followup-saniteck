@@ -50,11 +50,3 @@ if (loadedConfig.allowLiveTest && !loadedConfig.testPanelEnabled) {
 }
 
 export const config = Object.freeze(loadedConfig);
-
-export const messages = Object.freeze({
-  followup15: 'Olá! 😊 Para continuar o atendimento, é só responder às perguntas acima.',
-  followup30: 'Olá! 😊 Para continuar o atendimento, é só responder às perguntas acima.',
-  followup2h: 'Olá! 😊 Fico no aguardo da sua resposta para dar sequência ao atendimento.',
-  closing:
-    'Olá! 😊 Como não tive retorno, este atendimento será encerrado. Quando quiser continuar, é só retomar por aqui 🙂',
-});

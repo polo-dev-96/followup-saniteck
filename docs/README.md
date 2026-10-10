@@ -1,6 +1,6 @@
 # Documentação operacional
 
-Esta pasta reúne a documentação da automação standalone de follow-ups, desde a arquitetura que substituiu o n8n até a homologação em produção.
+Esta pasta reúne a documentação da automação standalone de transferência e ativação de chatbot, desde a arquitetura que substituiu o roteamento do n8n até a homologação em produção.
 
 ## Conteúdo
 
@@ -14,10 +14,10 @@ Esta pasta reúne a documentação da automação standalone de follow-ups, desd
 - API e paginação validadas.
 - Equipe de origem Geral validada.
 - Telefone do contato obtido diretamente da API.
-- Redis dispensado pela aplicação de follow-up.
-- Envio de mensagem, reativação do chatbot e transferência validados.
+- Redis dispensado pela aplicação de transferência.
+- Transferência por departamento e ativação posterior do chatbot validadas.
 - Roteamento por tag e fallback Comercial validados.
 - Painel de homologação validado em produção por túnel SSH.
 - Idempotência persistida em SQLite validada.
 
-Antes da ativação geral, o workflow equivalente no n8n deve ser desativado para evitar envios duplicados.
+Antes da ativação geral, o workflow equivalente no n8n deve ser desativado para evitar ações duplicadas.

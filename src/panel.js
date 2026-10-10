@@ -79,7 +79,7 @@ export class TestPanel {
       companyAnsweredAfterClient: Number.isFinite(lastIn) && Number.isFinite(lastOut) && lastOut > lastIn,
       recipientAvailable: recipientsFor(session).length > 0,
       routing,
-      simulatedFlow: ['message_30m', 'chatbot_30m', 'transfer_30m'],
+      simulatedFlow: ['transfer_15m', 'chatbot_15m'],
       recordedActions: referenceAt ? this.store.actionsFor(session.id, referenceAt) : [],
     };
   }
@@ -97,7 +97,7 @@ export class TestPanel {
     if (!this.config.allowLiveTest) {
       throw Object.assign(new Error('Teste real desabilitado por ALLOW_LIVE_TEST'), { status: 403 });
     }
-    if (body.confirmation !== 'ENVIAR FOLLOWUP') {
+    if (body.confirmation !== 'EXECUTAR TRANSFERENCIA') {
       throw Object.assign(new Error('Confirmação inválida'), { status: 400 });
     }
     if (this.executing) throw Object.assign(new Error('Outro teste está em execução'), { status: 409 });
@@ -126,7 +126,7 @@ export class TestPanel {
         client: this.client,
         store: this.store,
       });
-      await engine.reactivate(session, { window: '30m', referenceAt, closingAlreadySent: false });
+      await engine.transferAndStartChatbot(session, { window: '15m', referenceAt });
       return {
         executed: true,
         session: this.describe(session),

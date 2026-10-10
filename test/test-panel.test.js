@@ -26,9 +26,8 @@ const createPanel = ({ allowLiveTest }) => {
   const calls = [];
   const client = {
     async *listSessions() { yield session; },
-    async sendMessage() { calls.push('message'); },
-    async startChatbot() { calls.push('chatbot'); },
     async transferToDepartment(_sessionId, departmentId) { calls.push(`transfer:${departmentId}`); },
+    async startChatbot() { calls.push('chatbot'); },
   };
   const config = {
     allowLiveTest,
@@ -61,7 +60,7 @@ test('bloqueia execução real quando ALLOW_LIVE_TEST está desligado', async ()
   const fixture = createPanel({ allowLiveTest: false });
   try {
     await assert.rejects(
-      fixture.panel.execute({ phone: '92994414222', sessionId: session.id, confirmation: 'ENVIAR FOLLOWUP' }),
+      fixture.panel.execute({ phone: '92994414222', sessionId: session.id, confirmation: 'EXECUTAR TRANSFERENCIA' }),
       /ALLOW_LIVE_TEST/,
     );
     assert.deepEqual(fixture.calls, []);
@@ -70,14 +69,13 @@ test('bloqueia execução real quando ALLOW_LIVE_TEST está desligado', async ()
 
 test('executa uma vez e impede duplicidade na mesma sessão e referência', async () => {
   const fixture = createPanel({ allowLiveTest: true });
-  const body = { phone: '92994414222', sessionId: session.id, confirmation: 'ENVIAR FOLLOWUP' };
+  const body = { phone: '92994414222', sessionId: session.id, confirmation: 'EXECUTAR TRANSFERENCIA' };
   try {
     await fixture.panel.execute(body);
     await fixture.panel.execute(body);
     assert.deepEqual(fixture.calls, [
-      'message',
-      'chatbot',
       `transfer:${SELLER_DEPARTMENTS.MARINES}`,
+      'chatbot',
     ]);
   } finally { fixture.close(); }
 });

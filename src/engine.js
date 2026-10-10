@@ -1,17 +1,17 @@
-import { messages } from './config.js';
 import { log } from './logger.js';
 import { selectDepartment } from './routing.js';
 
 const OPEN_STATUSES = new Set(['STARTED', 'PENDING', 'IN_PROGRESS']);
-const CLOSING_PREFIX = 'Olá! 😊 Como não tive retorno, este atendimento será encerrado.';
 
-export const decideWindow = (minutes, closingAlreadySent = false) => {
-  if (minutes >= 15 && minutes < 25) return '15m';
-  if (minutes >= 30 && minutes < 40) return '30m';
+const recipientFor = (session) =>
+  session.contactDetails?.phonenumber ||
+  session.contactDetails?.instagram ||
+  session.number ||
+  null;
+
+export const decideWindow = (minutes) => {
+  if (minutes >= 15 && minutes < 30) return '15m';
   if (minutes >= 120 && minutes < 130) return '2h';
-  if ((minutes >= 1380 && minutes < 1440) || (closingAlreadySent && minutes < 1500)) {
-    return 'closing';
-  }
   return null;
 };
 
@@ -26,23 +26,15 @@ export const evaluateSession = (session, sourceDepartmentId, now = Date.now()) =
 
   const minutes = (now - lastMessageIn) / 60000;
   if (minutes < 0 || minutes >= 1500) return null;
-  const closingAlreadySent = String(session.lastMessageText ?? '').startsWith(CLOSING_PREFIX);
-  const window = decideWindow(minutes, closingAlreadySent);
+  const window = decideWindow(minutes);
   if (!window) return null;
 
   return {
     window,
     minutes,
     referenceAt: new Date(lastMessageIn).toISOString(),
-    closingAlreadySent,
   };
 };
-
-const recipientFor = (session) =>
-  session.contactDetails?.phonenumber ||
-  session.contactDetails?.instagram ||
-  session.number ||
-  null;
 
 export class FollowupEngine {
   constructor({ config, client, store }) {
@@ -81,23 +73,22 @@ export class FollowupEngine {
     }
   }
 
-  async reactivate(session, context) {
+  async transferAndStartChatbot(session, context) {
     const suffix = context.window;
-    const textByWindow = {
-      '15m': messages.followup15,
-      '30m': messages.followup30,
-      '2h': messages.followup2h,
-    };
-    const text = textByWindow[context.window];
-    const messageOk = await this.step(
-      session,
-      `message_${suffix}`,
-      context.referenceAt,
-      () => this.client.sendMessage(session.id, text),
+    const routing = selectDepartment(
+      session.contactDetails?.tagsName,
+      this.config.commercialDepartmentId,
     );
-    if (!messageOk) return;
+    const transferOk = await this.step(
+      session,
+      `transfer_${suffix}`,
+      context.referenceAt,
+      () => this.client.transferToDepartment(session.id, routing.departmentId),
+      routing,
+    );
+    if (!transferOk) return;
 
-    const chatbotOk = await this.step(
+    await this.step(
       session,
       `chatbot_${suffix}`,
       context.referenceAt,
@@ -108,40 +99,6 @@ export class FollowupEngine {
           to: recipientFor(session),
           sessionId: session.id,
         }),
-    );
-    if (!chatbotOk) return;
-
-    if (context.window === '15m') return;
-
-    const routing = selectDepartment(
-      session.contactDetails?.tagsName,
-      this.config.commercialDepartmentId,
-    );
-    await this.step(
-      session,
-      `transfer_${suffix}`,
-      context.referenceAt,
-      () => this.client.transferToDepartment(session.id, routing.departmentId),
-      routing,
-    );
-  }
-
-  async close(session, context) {
-    let messageOk = true;
-    if (!context.closingAlreadySent) {
-      messageOk = await this.step(
-        session,
-        'closing_message',
-        context.referenceAt,
-        () => this.client.sendMessage(session.id, messages.closing),
-      );
-    }
-    if (!messageOk) return;
-    await this.step(
-      session,
-      'complete_session',
-      context.referenceAt,
-      () => this.client.completeSession(session.id),
     );
   }
 
@@ -154,7 +111,7 @@ export class FollowupEngine {
     const summary = {
       scanned: 0,
       eligible: 0,
-      byWindow: { '15m': 0, '30m': 0, '2h': 0, closing: 0 },
+      byWindow: { '15m': 0, '2h': 0 },
     };
     log('info', 'run.started', { dryRun: this.config.dryRun });
 
@@ -166,8 +123,7 @@ export class FollowupEngine {
         if (!context) continue;
         summary.eligible += 1;
         summary.byWindow[context.window] += 1;
-        if (context.window === 'closing') await this.close(session, context);
-        else await this.reactivate(session, context);
+        await this.transferAndStartChatbot(session, context);
       }
       this.lastError = null;
       this.lastRun = new Date().toISOString();

@@ -58,7 +58,7 @@ Pode significar:
 - Nenhuma sessão está na equipe Geral.
 - A sessão está concluída.
 - A empresa ainda não respondeu depois do cliente.
-- A sessão não está nas janelas de 15 minutos, 30 minutos, 2 horas ou 23 horas.
+- A sessão não está nas janelas de 15–30 minutos ou 2 horas.
 - As datas estão ausentes ou inválidas.
 
 ## Painel retorna 404

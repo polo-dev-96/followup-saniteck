@@ -27,48 +27,21 @@ const baseSession = (minutes, overrides = {}) => {
 };
 
 test('classifica somente as janelas do workflow', () => {
+  assert.equal(decideWindow(14.99), null);
   assert.equal(decideWindow(15), '15m');
   assert.equal(decideWindow(24.99), '15m');
-  assert.equal(decideWindow(25), null);
-  assert.equal(decideWindow(30), '30m');
-  assert.equal(decideWindow(39.99), '30m');
+  assert.equal(decideWindow(29.99), '15m');
+  assert.equal(decideWindow(30), null);
   assert.equal(decideWindow(40), null);
   assert.equal(decideWindow(120), '2h');
   assert.equal(decideWindow(129.99), '2h');
-  assert.equal(decideWindow(1380), 'closing');
+  assert.equal(decideWindow(1380), null);
   assert.equal(decideWindow(1440), null);
-  assert.equal(decideWindow(1450, true), 'closing');
 });
 
-test('follow-up de 15 minutos não transfere o atendimento', async () => {
-  const directory = mkdtempSync(join(tmpdir(), 'followup-15m-test-'));
-  const store = new ActionStore(join(directory, 'test.sqlite'));
-  const calls = [];
-  const client = {
-    sendMessage: async () => calls.push('message'),
-    startChatbot: async () => calls.push('chatbot'),
-    transferToDepartment: async () => calls.push('transfer'),
-  };
-  const config = {
-    dryRun: false,
-    actionRetries: 3,
-    retryDelayMinutes: 1,
-    botKey: 'bot',
-    from: 'from',
-    commercialDepartmentId: 'commercial',
-  };
-  const engine = new FollowupEngine({ config, client, store });
-  const testSession = baseSession(15);
-
-  await engine.reactivate(testSession, {
-    window: '15m',
-    referenceAt: testSession.lastMessageIn,
-    closingAlreadySent: false,
-  });
-
-  assert.deepEqual(calls, ['message', 'chatbot']);
-  store.close();
-  rmSync(directory, { recursive: true, force: true });
+test('considera a nova janela a partir de 15 minutos', () => {
+  const now = Date.parse('2026-08-01T12:00:00.000Z');
+  assert.equal(evaluateSession(baseSession(15), SOURCE_TEAM, now)?.window, '15m');
 });
 
 test('ignora conversa de outra equipe ou sem resposta posterior', () => {
@@ -79,35 +52,65 @@ test('ignora conversa de outra equipe ou sem resposta posterior', () => {
   assert.equal(evaluateSession(session, SOURCE_TEAM, now), null);
 });
 
-test('executa mensagem, chatbot e transferência na ordem e sem duplicar', async () => {
+test('executa transferência antes do chatbot e sem duplicar', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'followup-test-'));
   const store = new ActionStore(join(directory, 'test.sqlite'));
   const calls = [];
   const client = {
-    sendMessage: async () => calls.push('message'),
-    startChatbot: async () => calls.push('chatbot'),
     transferToDepartment: async (_sessionId, departmentId) => calls.push(`transfer:${departmentId}`),
+    startChatbot: async () => calls.push('chatbot'),
   };
   const config = {
     dryRun: false,
     actionRetries: 3,
     retryDelayMinutes: 1,
+    commercialDepartmentId: 'commercial',
     botKey: 'bot',
     from: 'from',
-    commercialDepartmentId: 'commercial',
   };
   const engine = new FollowupEngine({ config, client, store });
-  const session = baseSession(30);
+  const session = baseSession(20);
   const context = {
-    window: '30m',
+    window: '15m',
     referenceAt: session.lastMessageIn,
-    closingAlreadySent: false,
   };
 
-  await engine.reactivate(session, context);
-  await engine.reactivate(session, context);
-  assert.deepEqual(calls, ['message', 'chatbot', `transfer:${SELLER_DEPARTMENTS.GABRIELA}`]);
+  await engine.transferAndStartChatbot(session, context);
+  await engine.transferAndStartChatbot(session, context);
+  assert.deepEqual(calls, [`transfer:${SELLER_DEPARTMENTS.GABRIELA}`, 'chatbot']);
 
+  store.close();
+  rmSync(directory, { recursive: true, force: true });
+});
+
+test('não inicia chatbot quando a transferência falha', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'followup-transfer-failure-test-'));
+  const store = new ActionStore(join(directory, 'test.sqlite'));
+  const calls = [];
+  const client = {
+    transferToDepartment: async () => {
+      calls.push('transfer');
+      throw new Error('falha na transferência');
+    },
+    startChatbot: async () => calls.push('chatbot'),
+  };
+  const config = {
+    dryRun: false,
+    actionRetries: 3,
+    retryDelayMinutes: 1,
+    commercialDepartmentId: 'commercial',
+    botKey: 'bot',
+    from: 'from',
+  };
+  const engine = new FollowupEngine({ config, client, store });
+  const session = baseSession(20);
+
+  await engine.transferAndStartChatbot(session, {
+    window: '15m',
+    referenceAt: session.lastMessageIn,
+  });
+
+  assert.deepEqual(calls, ['transfer']);
   store.close();
   rmSync(directory, { recursive: true, force: true });
 });

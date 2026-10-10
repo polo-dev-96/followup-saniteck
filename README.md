@@ -1,6 +1,8 @@
-# Follow-ups Ponto da Camisa
+# Roteamento automático Ponto da Camisa
 
-Aplicação standalone que substitui a automação de follow-up do n8n. A cada 10 minutos ela consulta as conversas da equipe Orçamento/Pedido, envia os follow-ups, ativa o chatbot e transfere o atendimento conforme a tag do vendedor.
+Aplicação standalone que substitui a parte de roteamento do workflow do n8n. A cada 10 minutos ela consulta as conversas da equipe de origem, transfere os atendimentos conforme a tag do vendedor e, depois da transferência, inicia o chatbot.
+
+O serviço não envia mensagens de follow-up e não conclui atendimentos.
 
 ## Documentação
 
@@ -12,14 +14,15 @@ Aplicação standalone que substitui a automação de follow-up do n8n. A cada 1
 
 ## Regras
 
-- 15–25 minutos: envia o primeiro follow-up e ativa a IA, sem transferência.
-- 30–40 minutos: envia o segundo follow-up, ativa a IA e transfere por tag.
-- 2h–2h10: envia o follow-up de 2 horas, ativa a IA e transfere por tag.
-- 23–24 horas: envia a mensagem de encerramento e conclui o atendimento.
+- 15–30 minutos: transfere o atendimento conforme a tag do vendedor e inicia o chatbot.
+- 2h–2h10: tenta a transferência como contingência e inicia o chatbot se a transferência for bem-sucedida.
 - Processa apenas conversas abertas da equipe configurada em `SOURCE_DEPARTMENT_ID`.
 - Exige que a última mensagem da empresa seja posterior à última mensagem do cliente.
-- Cada mensagem, chatbot, transferência e conclusão possui controle independente de duplicidade no SQLite.
-- Uma ação com falha é repetida sem refazer as etapas anteriores que já tiveram sucesso.
+- Transferência e chatbot possuem controles independentes de duplicidade no SQLite.
+- O chatbot somente é iniciado depois do sucesso da transferência.
+- Uma ação com falha pode ser repetida até o limite configurado.
+
+Não existe ação de encerramento na antiga janela de 23–24 horas.
 
 ## Roteamento
 
@@ -40,7 +43,7 @@ Requer Node.js 22.13 ou mais recente. Nenhuma dependência npm externa é necess
 npm run run:once
 ```
 
-O modo simulação consulta dados reais, mas não envia mensagens, não ativa chatbot, não transfere e não conclui atendimentos. Confira os eventos `action.would_run` nos logs.
+O modo simulação consulta dados reais, mas não transfere atendimentos nem inicia o chatbot. Confira os eventos `action.would_run` nos logs.
 
 Para ativar, altere `DRY_RUN=false` e execute:
 
@@ -68,7 +71,7 @@ A resposta mostra a última execução, quantidade analisada, conversas elegíve
 
 ## Painel de homologação
 
-O painel permite buscar um telefone, simular o fluxo de 30 minutos e executar um teste real isolado. Ele fica desabilitado por padrão. Configure:
+O painel permite buscar um telefone, simular o roteamento e executar uma transferência seguida da ativação do chatbot. Ele fica desabilitado por padrão. Configure:
 
 ```env
 TEST_PANEL_ENABLED=true
@@ -82,7 +85,7 @@ Em um servidor remoto, acesse somente por túnel SSH:
 ssh -L 3000:127.0.0.1:3000 usuario@servidor
 ```
 
-Depois abra `http://localhost:3000/test`. O teste real exige exatamente uma sessão aberta, uma resposta da empresa posterior à mensagem do cliente e o departamento de origem configurado. As ações usam o mesmo SQLite e não são repetidas para a mesma sessão e referência.
+Depois abra `http://localhost:3000/test`. O teste real exige exatamente uma sessão aberta, uma resposta da empresa posterior à mensagem do cliente e o departamento de origem configurado. Transferência e chatbot usam o mesmo SQLite e não são repetidos para a mesma sessão e referência.
 
 Após homologar, defina `ALLOW_LIVE_TEST=false` e recrie o container.
 
@@ -98,3 +101,4 @@ npm test
 - Faça backup do volume que contém `/app/data/followups.sqlite`.
 - Execute apenas uma réplica da aplicação com o mesmo banco SQLite.
 - Primeiro valide pelo menos uma execução completa com `DRY_RUN=true`.
+- Desative o workflow equivalente no n8n antes de ativar o serviço.

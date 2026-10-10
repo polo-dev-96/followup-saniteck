@@ -82,10 +82,14 @@ export class FlwChatClient {
     } while (true);
   }
 
-  sendMessage(sessionId, text) {
-    return this.request(`/v1/session/${encodeURIComponent(sessionId)}/message`, {
-      method: 'POST',
-      body: { text },
+  transferToDepartment(sessionId, newDepartmentId) {
+    return this.request(`/v1/session/${encodeURIComponent(sessionId)}/transfer`, {
+      method: 'PUT',
+      body: {
+        type: 'DEPARTMENT',
+        newDepartmentId,
+        options: { stopBotInExecution: false },
+      },
     });
   }
 
@@ -105,23 +109,4 @@ export class FlwChatClient {
       },
     });
   }
-
-  transferToDepartment(sessionId, newDepartmentId) {
-    return this.request(`/v1/session/${encodeURIComponent(sessionId)}/transfer`, {
-      method: 'PUT',
-      body: {
-        type: 'DEPARTMENT',
-        newDepartmentId,
-        options: { stopBotInExecution: false },
-      },
-    });
-  }
-
-  completeSession(sessionId) {
-    return this.request(`/v1/session/${encodeURIComponent(sessionId)}/complete`, {
-      method: 'PUT',
-      body: { reactivateOnNewMessage: true, stopBotInExecution: true },
-    });
-  }
 }
-

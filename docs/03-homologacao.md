@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-O painel permite testar um único contato sem liberar o worker geral. O cenário recomendado durante a homologação é:
+O painel permite testar a transferência e a ativação do chatbot para um único contato sem liberar o worker geral. O cenário recomendado durante a homologação é:
 
 ```env
 DRY_RUN=true
@@ -20,11 +20,10 @@ Assim, as varreduras gerais apenas simulam ações. Somente uma execução confi
 - O painel exige exatamente uma sessão aberta para o contato.
 - A sessão precisa estar no departamento de origem.
 - A empresa precisa ter respondido depois do cliente.
-- O destinatário precisa estar disponível.
-- O envio usa templates fixos.
 - A execução exige confirmação explícita.
 - O SQLite impede repetição para a mesma sessão e referência.
-- O painel não oferece encerramento forçado.
+- O painel não envia mensagens e não conclui a sessão.
+- O chatbot somente é iniciado depois da transferência.
 
 ## Acesso remoto seguro
 
@@ -84,17 +83,16 @@ docker compose up -d --force-recreate
 8. Confirme sessão, status, equipe, resposta da empresa, tag e destino.
 9. Marque a confirmação.
 10. Clique em **Executar teste real**.
-11. Confira a mensagem recebida, chatbot e transferência na plataforma.
+11. Confira a transferência e o chatbot na plataforma.
 
 ## Resultado homologado
 
 Os testes realizados validaram:
 
 ```text
-Mensagem de follow-up de 30 minutos enviada
-Chatbot reativado
 Transferência para MARINES quando a tag existia
 Fallback para Comercial quando não havia tag reconhecida
+Chatbot iniciado depois da transferência
 Ações registradas no SQLite
 ```
 
@@ -111,9 +109,8 @@ docker compose logs -f --tail=100 followup
 Sucesso real:
 
 ```text
-action.success / message_30m
-action.success / chatbot_30m
-action.success / transfer_30m
+action.success / transfer_15m
+action.success / chatbot_15m
 ```
 
 Simulação do worker geral:
